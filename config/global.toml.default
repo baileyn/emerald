@@ -1,0 +1,8 @@
+[database]
+host = "127.0.0.1"
+port = 3306
+database = "sapphire"
+username = "sapphire"
+#password = "password"
+#sync_threads = 2
+#async_threads = 2
