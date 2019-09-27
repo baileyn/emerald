@@ -1,5 +1,5 @@
 [package]
-name = "common"
+name = "database"
 version = "0.1.0"
 authors = ["Nicholas Bailey <nicholas.j.bailey91@gmail.com>"]
 edition = "2018"
@@ -7,5 +7,6 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-serde = { version = "1.0.101", features = ["derive"] }
-toml = "0.5.3"
+dotenv = "0.14.1"
+chrono = "0.4.9"
+diesel = { version = "1.4.2", features = [ "chrono", "postgres" ] }

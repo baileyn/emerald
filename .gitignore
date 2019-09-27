@@ -1,2 +1,5 @@
 /target
 **/*.rs.bk
+
+# Ignore the global configuration file.
+global.toml
