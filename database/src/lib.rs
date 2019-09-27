@@ -7,7 +7,7 @@ use dotenv::dotenv;
 use std::env;
 
 pub mod models;
-pub mod schema;
+mod schema;
 
 pub fn establish_connection() -> PgConnection {
     dotenv().ok();

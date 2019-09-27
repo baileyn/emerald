@@ -51,17 +51,21 @@ impl Account {
         name: S,
         password: S,
         status: Option<i16>,
-    ) -> Account {
+    ) -> Option<Account> {
         let new_account = NewAccount {
             username: name.as_ref(),
             password: &bcrypt::hash(password.as_ref(), 8).unwrap(),
             status,
         };
 
-        diesel::insert_into(accounts::table)
+        if let Ok(account) = diesel::insert_into(accounts::table)
             .values(new_account)
             .get_result(conn)
-            .expect("Unable to create new account.")
+        {
+            Some(account)
+        } else {
+            None
+        }
     }
 }
 
