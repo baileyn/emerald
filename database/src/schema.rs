@@ -1,7 +1,7 @@
 table! {
     accounts (id) {
         id -> Int4,
-        name -> Varchar,
+        username -> Varchar,
         password -> Varchar,
         created -> Timestamp,
         status -> Int2,
