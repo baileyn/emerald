@@ -1,9 +1,9 @@
-use std::ops::Deref;
-use rocket::http::Status;
-use rocket::request::{self, FromRequest};
-use rocket::{Request, State, Outcome};
 use diesel::pg::PgConnection;
 use diesel::r2d2::{ConnectionManager, Pool, PooledConnection};
+use rocket::http::Status;
+use rocket::request::{self, FromRequest};
+use rocket::{Outcome, Request, State};
+use std::ops::Deref;
 
 // An alias to the type for a pool of Diesel Mysql Connection
 pub type PgPool = Pool<ConnectionManager<PgConnection>>;
@@ -30,7 +30,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for Connection {
         let pool = request.guard::<State<PgPool>>()?;
         match pool.get() {
             Ok(conn) => Outcome::Success(Connection(conn)),
-            Err(_) => Outcome::Failure((Status::ServiceUnavailable, ()))
+            Err(_) => Outcome::Failure((Status::ServiceUnavailable, ())),
         }
     }
 }

@@ -9,8 +9,9 @@ use crate::schema::*;
 pub struct Account {
     pub id: i32,
     pub username: String,
+    #[serde(skip_serializing)]
     pub password: String,
-    #[serde(with="json_time")]
+    #[serde(with = "json_time")]
     pub created: NaiveDateTime,
     pub status: i16,
 }
@@ -82,9 +83,14 @@ struct NewAccount<'a> {
 mod json_time {
     use super::*;
     use chrono::{DateTime, Utc};
-    use serde::{Serialize, Serializer, Deserialize, Deserializer, de::Error};
+    use serde::{Serialize, Serializer};
 
-    pub fn serialize<S: Serializer>(time: &NaiveDateTime, serializer: S) -> Result<S::Ok, S::Error> {
-        DateTime::<Utc>::from_utc(time.clone(), Utc).to_rfc3339().serialize(serializer)
+    pub fn serialize<S: Serializer>(
+        time: &NaiveDateTime,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error> {
+        DateTime::<Utc>::from_utc(time.clone(), Utc)
+            .to_rfc3339()
+            .serialize(serializer)
     }
 }
