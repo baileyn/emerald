@@ -1,14 +1,16 @@
 use chrono::NaiveDateTime;
 use diesel::prelude::*;
 use diesel::{PgConnection, RunQueryDsl};
+use serde::Serialize;
 
 use crate::schema::*;
 
-#[derive(Debug, Queryable)]
+#[derive(Debug, Queryable, Serialize)]
 pub struct Account {
     pub id: i32,
     pub username: String,
     pub password: String,
+    #[serde(with="json_time")]
     pub created: NaiveDateTime,
     pub status: i16,
 }
@@ -75,4 +77,14 @@ struct NewAccount<'a> {
     pub username: &'a str,
     pub password: &'a str,
     pub status: Option<i16>,
+}
+
+mod json_time {
+    use super::*;
+    use chrono::{DateTime, Utc};
+    use serde::{Serialize, Serializer, Deserialize, Deserializer, de::Error};
+
+    pub fn serialize<S: Serializer>(time: &NaiveDateTime, serializer: S) -> Result<S::Ok, S::Error> {
+        DateTime::<Utc>::from_utc(time.clone(), Utc).to_rfc3339().serialize(serializer)
+    }
 }
