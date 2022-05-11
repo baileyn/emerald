@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
 project(emerald)
+set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 
 ADD_DEFINITIONS(-DUNICODE -D_UNICODE)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -10,6 +11,10 @@ set(SPDLOG_WCHAR_SUPPORT ON)
 set(SPDLOG_WCHAR_FILENAMES ON)
 add_subdirectory(deps/spdlog)
 
+set(ZYDIS_BUILD_EXAMPLES OFF)
+set(ZYDIS_BUILD_TOOLS OFF)
 add_subdirectory(deps/zydis)
+
 add_subdirectory(winx)
+add_subdirectory(emeraldint)
 add_subdirectory(emerald)
