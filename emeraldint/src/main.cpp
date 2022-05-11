@@ -9,6 +9,7 @@ BOOL WINAPI DllMain(
     switch( fdwReason )
     {
         case DLL_PROCESS_ATTACH:
+            MessageBoxA(0, "Loaded", "Status", MB_OK);
             // Initialize once for each new process.
             // Return FALSE to fail DLL load.
             break;
