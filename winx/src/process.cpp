@@ -2,12 +2,10 @@
 // Created by nicho on 5/7/2022.
 //
 
-#include <TlHelp32.h>
 #include <Windows.h>
 
-
 #include "winx/process.h"
-
+#include <TlHelp32.h>
 #include <iostream>
 
 namespace winx::process
