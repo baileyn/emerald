@@ -9,7 +9,7 @@
 namespace fs = std::filesystem;
 
 std::filesystem::path get_data_dir() {
-    wchar_t* szPath;
+    wchar_t *szPath;
     SHGetKnownFolderPath(FOLDERID_RoamingAppData, KF_FLAG_CREATE, nullptr, &szPath);
     auto result = fs::path(szPath);
     CoTaskMemFree(szPath);
@@ -17,9 +17,9 @@ std::filesystem::path get_data_dir() {
     return result;
 }
 
-using f_LoadLibraryA = HMODULE (WINAPI*)(LPCSTR lpLibFileName);
-using f_GetProcAddress = FARPROC (WINAPI*)(HMODULE hModule, LPCSTR lpProcName);
-using f_DllEntryPoint = BOOL (WINAPI*)(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved);
+using f_LoadLibraryA = HMODULE (WINAPI *)(LPCSTR lpLibFileName);
+using f_GetProcAddress = FARPROC (WINAPI *)(HMODULE hModule, LPCSTR lpProcName);
+using f_DllEntryPoint = BOOL (WINAPI *)(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved);
 using f_MessageBoxA = int (*)(HWND hWnd, LPCSTR lpText, LPCSTR lpCaption, UINT uType);
 
 struct ManualMappingData {
@@ -29,13 +29,14 @@ struct ManualMappingData {
     HINSTANCE hinstDLL;
 };
 
-DWORD shellCode(ManualMappingData* data) {
+DWORD shellCode(ManualMappingData *data) {
     if ((data == nullptr) || (data->getProcAddress == nullptr) || (data->loadLibraryA == nullptr)) {
         return 1;
     }
 
     auto *base = reinterpret_cast<PBYTE>(data);
-    auto *optionalHeader = &reinterpret_cast<PIMAGE_NT_HEADERS>(base + reinterpret_cast<PIMAGE_DOS_HEADER>(data)->e_lfanew)->OptionalHeader;
+    auto *optionalHeader = &reinterpret_cast<PIMAGE_NT_HEADERS>(base +
+                                                                reinterpret_cast<PIMAGE_DOS_HEADER>(data)->e_lfanew)->OptionalHeader;
 
     auto loadLibraryA = data->loadLibraryA;
     auto getProcAddress = data->getProcAddress;
@@ -48,7 +49,8 @@ DWORD shellCode(ManualMappingData* data) {
             return 1;
         }
 
-        auto *relocData = reinterpret_cast<PIMAGE_BASE_RELOCATION>(base + optionalHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress);
+        auto *relocData = reinterpret_cast<PIMAGE_BASE_RELOCATION>(base +
+                                                                   optionalHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress);
         while (relocData->VirtualAddress != 0U) {
             if (relocData->SizeOfBlock < sizeof(IMAGE_BASE_RELOCATION)) {
                 continue;
@@ -58,21 +60,22 @@ DWORD shellCode(ManualMappingData* data) {
             auto *relativeInfo = reinterpret_cast<PWORD>(relocData + 1);
 
             for (auto i = 0; i < numberOfEntries; i++, relativeInfo++) {
-                if(relativeInfo != nullptr) {
+                if (relativeInfo != nullptr) {
                     auto *patch = reinterpret_cast<UINT_PTR *>(base + relocData->VirtualAddress +
                                                                (*relativeInfo & 0xFFF));
                     *patch += locationDelta;
                 }
             }
 
-            relocData = reinterpret_cast<PIMAGE_BASE_RELOCATION>(reinterpret_cast<PBYTE>(relocData) + relocData->SizeOfBlock);
+            relocData = reinterpret_cast<PIMAGE_BASE_RELOCATION>(reinterpret_cast<PBYTE>(relocData) +
+                                                                 relocData->SizeOfBlock);
         }
     }
 
     if (optionalHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].Size != 0) {
-        auto *importDesc = reinterpret_cast<PIMAGE_IMPORT_DESCRIPTOR>(base + optionalHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress);
-        while (importDesc->Characteristics != 0)
-        {
+        auto *importDesc = reinterpret_cast<PIMAGE_IMPORT_DESCRIPTOR>(base +
+                                                                      optionalHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress);
+        while (importDesc->Characteristics != 0) {
             const auto *name = reinterpret_cast<LPCSTR>(base + importDesc->Name);
             auto *originalFirstThunk = reinterpret_cast<PIMAGE_THUNK_DATA>(base + importDesc->OriginalFirstThunk);
             auto *firstThunk = reinterpret_cast<PIMAGE_THUNK_DATA>(base + importDesc->FirstThunk);
@@ -84,7 +87,8 @@ DWORD shellCode(ManualMappingData* data) {
 
             while (originalFirstThunk->u1.AddressOfData != 0U) {
                 if ((originalFirstThunk->u1.Ordinal & IMAGE_ORDINAL_FLAG) != 0U) {
-                    auto loadedFunction = getProcAddress(hDll, reinterpret_cast<LPCSTR>(originalFirstThunk->u1.Ordinal & 0xFFFF));
+                    auto loadedFunction = getProcAddress(hDll, reinterpret_cast<LPCSTR>(originalFirstThunk->u1.Ordinal &
+                                                                                        0xFFFF));
 
                     if (loadedFunction == nullptr) {
                         return 1;
@@ -111,8 +115,9 @@ DWORD shellCode(ManualMappingData* data) {
     }
 
     if (optionalHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_TLS].Size != 0) {
-        auto *tls = reinterpret_cast<PIMAGE_TLS_DIRECTORY>(base + optionalHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_TLS].VirtualAddress);
-        auto *callback = reinterpret_cast<PIMAGE_TLS_CALLBACK*>(tls->AddressOfCallBacks);
+        auto *tls = reinterpret_cast<PIMAGE_TLS_DIRECTORY>(base +
+                                                           optionalHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_TLS].VirtualAddress);
+        auto *callback = reinterpret_cast<PIMAGE_TLS_CALLBACK *>(tls->AddressOfCallBacks);
 
         for (; callback != nullptr && *callback != nullptr; callback++) {
             (*callback)(base, DLL_PROCESS_ATTACH, nullptr);
@@ -123,7 +128,7 @@ DWORD shellCode(ManualMappingData* data) {
     return dllMain(data->hinstDLL, DLL_PROCESS_ATTACH, nullptr);
 }
 
-bool memory_map(HANDLE proc, const fs::path& path) {
+bool memory_map(HANDLE proc, const fs::path &path) {
     spdlog::trace(L"Mapping the following payload: {}", path.wstring());
     spdlog::trace(L"Ensuring payload exists");
     if (!fs::exists(path)) {
@@ -161,16 +166,16 @@ bool memory_map(HANDLE proc, const fs::path& path) {
     }
 
     spdlog::trace(L"Attempting to allocate memory at the preferred base address for payload");
-    auto *targetBase = reinterpret_cast<uint8_t*>(VirtualAllocEx(proc,
-                                                                 reinterpret_cast<void*>(oldOptHeader->ImageBase),
-                                                                 oldOptHeader->SizeOfImage,
+    auto *targetBase = reinterpret_cast<uint8_t *>(VirtualAllocEx(proc,
+                                                                  reinterpret_cast<void *>(oldOptHeader->ImageBase),
+                                                                  oldOptHeader->SizeOfImage,
                                                                   MEM_COMMIT | MEM_RESERVE,
-                                                                 PAGE_EXECUTE_READWRITE));
+                                                                  PAGE_EXECUTE_READWRITE));
     if (targetBase == nullptr) {
         spdlog::trace("-- Preferred address unavailable, trying for any address");
-        targetBase = reinterpret_cast<uint8_t*>(VirtualAllocEx(proc,nullptr,oldOptHeader->SizeOfImage,
-                                                                      MEM_COMMIT | MEM_RESERVE,
-                                                               PAGE_EXECUTE_READWRITE));
+        targetBase = reinterpret_cast<uint8_t *>(VirtualAllocEx(proc, nullptr, oldOptHeader->SizeOfImage,
+                                                                MEM_COMMIT | MEM_RESERVE,
+                                                                PAGE_EXECUTE_READWRITE));
 
         if (targetBase == nullptr) {
             spdlog::error("Unable to allocate memory to map payload: {:X}", GetLastError());
@@ -185,8 +190,8 @@ bool memory_map(HANDLE proc, const fs::path& path) {
                       sectionHeader->VirtualAddress);
 
         if (WriteProcessMemory(proc, targetBase + sectionHeader->VirtualAddress,
-                           data.data() + sectionHeader->PointerToRawData, sectionHeader->SizeOfRawData,
-                           nullptr) == 0) {
+                               data.data() + sectionHeader->PointerToRawData, sectionHeader->SizeOfRawData,
+                               nullptr) == 0) {
             spdlog::error("Unable to map section #{}: {:X}", i, GetLastError());
             VirtualFreeEx(proc, targetBase, 0, MEM_RELEASE);
             return false;
@@ -215,7 +220,8 @@ bool memory_map(HANDLE proc, const fs::path& path) {
     WriteProcessMemory(proc, pShellCode, reinterpret_cast<PVOID>(shellCode), 0x1000, nullptr);
 
     spdlog::trace(L"Executing shell code");
-    HANDLE thread = CreateRemoteThread(proc, nullptr, 0, reinterpret_cast<LPTHREAD_START_ROUTINE>(pShellCode), targetBase, 0, nullptr);
+    HANDLE thread = CreateRemoteThread(proc, nullptr, 0, reinterpret_cast<LPTHREAD_START_ROUTINE>(pShellCode),
+                                       targetBase, 0, nullptr);
     if (thread == nullptr) {
         spdlog::error(L"Unable to execute injected shell code.");
         VirtualFreeEx(proc, targetBase, 0, MEM_RELEASE);
@@ -231,8 +237,7 @@ bool memory_map(HANDLE proc, const fs::path& path) {
     return true;
 }
 
-int main(int argc, char** argv)
-{
+int main(int argc, char **argv) {
     spdlog::set_level(spdlog::level::trace);
 
     const auto *target = L"Notepad.exe";
