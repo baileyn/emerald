@@ -2,7 +2,7 @@
 
 int main(int argc, char** argv)
 {
-    spdlog::info("Hello!");
+    spdlog::info("Hello! We got {} args!", argc);
 
     return 0;
 }
